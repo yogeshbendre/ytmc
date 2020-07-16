@@ -29,7 +29,8 @@ class WCPFetcher:
         time.sleep(1)
         try:
             myout = stdout.readlines()
-            print(myout)
+            for l in myout:
+                print(l)
             return myout
         except Exception as e:
             print("Something went wrong: "+str(e))

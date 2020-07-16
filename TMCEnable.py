@@ -60,6 +60,11 @@ class TMCWorkFlow:
                 cmd3 = "cat  /root/tmc_register.yaml"
                 self.wcp_fetcher.run_command_on_wcp(w, cmd3)
                 time.sleep(1)
+                if yaml_action == 'apply':
+                    cmd4 = "kubectl apply -f  /root/tmc_register.yaml"
+                    self.wcp_fetcher.run_command_on_wcp(w, cmd4)
+                    time.sleep(1)
+
                 print("Completed")
             except Exception as e:
                 print(str(e))
@@ -76,6 +81,7 @@ if __name__ == "__main__":
     api_token = None
     org_id = None
     lcp_prefix = None
+    yaml_action = None
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--vcenter", help="Specify vCenter", type=str)
     parser.add_argument("-u", "--username", type=str, help="Specify vCenter ssh username. Default: root")
@@ -85,6 +91,7 @@ if __name__ == "__main__":
     parser.add_argument("-a","--apitoken", type=str, help="Specify your api token")
     parser.add_argument("-o","--orgid", type=str, help="Specify org id")
     parser.add_argument("-x", "--lcpprefix", type=str, help="Specify LCP Prefix")
+    parser.add_argument("-y", "--yamlaction", type=str, help="Specify either apply or generate. Default: apply")
 
     args = parser.parse_args()
 
@@ -137,6 +144,13 @@ if __name__ == "__main__":
     else:
         print("No LCP Prefix specified, exiting. Try --help for more info.")
         exit(1)
+
+    if args.yamlaction:
+        yaml_action = args.yamlaction
+    else:
+        print("No yaml action specified. Assuming apply")
+        yaml_action = "apply"
+
 
 tmc_workflow = TMCWorkFlow(vc, username, password, tmc_url, api_token, org_id, lcp_prefix)
 tmc_workflow.create_lcp()
