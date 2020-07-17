@@ -77,7 +77,7 @@ class TMC:
         print(headers)
         url = "https://" + self.tmc_url + "/v1alpha1/localcontrolplanes/" + lcp_name
         print("url : " + url)
-        resp = self.mysession.delete(url, headers=headers)
+        resp = self.mysession.get(url, headers=headers)
         print(resp.status_code)
         print(resp.json())
         return resp.json()
