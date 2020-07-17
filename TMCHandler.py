@@ -54,11 +54,33 @@ class TMC:
         print(resp.json())
         return resp.json()
 
-        #Proceed further
-        pass
-    #try:
-    #    myurl = "https://"+self.tmc_url+"/v1alpha1/localcontrolplanes"
+    def delete_local_control_plane(self, lcp_name, force=True):
+        #curl -X DELETE \
+        #'https://<tmc_url>/v1alpha1/localcontrolplanes/<lcp_name>?fullName.orgId=<org_id>&force=true' \
+        #-H 'Authorization: Bearer <auth_token>'
+        self.generate_access_token()
+        headers = {"Content-Type": "application/json", "Authorization": "Bearer " + self.access_token}
+        print(headers)
+        url = "https://" + self.tmc_url + "/v1alpha1/localcontrolplanes/"+lcp_name+"?fullName.orgId=self.org_id&force=" + str(force).lower()
+        print("url : " + url)
+        resp = self.mysession.delete(url, headers=headers)
+        print(resp.status_code)
+        print(resp.json())
+        return resp.json()
 
+    def get_local_control_plane(self, lcp_name):
+        #curl -X GET \
+        #https://<tmc_url>/v1alpha1/localcontrolplanes/<lcp_name> \
+        #-H 'Authorization: Bearer <auth_token>'
+        self.generate_access_token()
+        headers = {"Content-Type": "application/json", "Authorization": "Bearer " + self.access_token}
+        print(headers)
+        url = "https://" + self.tmc_url + "/v1alpha1/localcontrolplanes/" + lcp_name
+        print("url : " + url)
+        resp = self.mysession.delete(url, headers=headers)
+        print(resp.status_code)
+        print(resp.json())
+        return resp.json()
 
 
 #Driver code

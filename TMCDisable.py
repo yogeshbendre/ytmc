@@ -1,6 +1,6 @@
 # Author: ybendre, jijumonv, jparappurath
-# Test: tmc_enabler
-# This is TMC Enable Workflow
+# Test: tmc_disable
+# This is TMC Disable Workflow
 
 import json
 import json
@@ -8,6 +8,8 @@ import argparse
 from TMCHandler import TMC
 from WCPFetcher import WCPFetcher
 import time
+
+
 class TMCWorkFlow:
 
     def __init__(self, vc, username, password, tmc_url, api_token, org_id, lcp_prefix):
@@ -25,46 +27,49 @@ class TMCWorkFlow:
         print(self.wcp_info)
         print("Initialized successfully")
 
-    def create_lcp(self):
+    def delete_lcp(self, force=True):
         for w in self.wcp_info:
             print("Cluster: "+w)
             try:
-                print("Creating LCP for "+self.wcp_info[w]["IP"])
+                print("Deleting LCP for "+self.wcp_info[w]["IP"])
                 print("")
-                lcp_name = lcp_prefix + "-vc-" +self.vc.replace(".","-") + "-w-" + self.wcp_info[w]["IP"].replace(".","-") + "lcp"
-                myinfo = self.tmc_handler.create_local_control_plane(lcp_name)
+                lcp_name = lcp_prefix + "-vc-" + self.vc.replace(".", "-") + "-w-" + self.wcp_info[w]["IP"].replace(".", "-") + "lcp"
+                myinfo = self.tmc_handler.delete_local_control_plane(lcp_name, force)
                 self.wcp_info[w]["lcp"] = myinfo
                 print("Completed")
             except Exception as e:
                 print(str(e))
 
-    def register_cluster(self):
+    def deregister_cluster(self):
         for w in self.wcp_info:
             print("Cluster: "+w)
             try:
-                print("Registering for " + self.wcp_info[w]["IP"])
+                print("Deregistering for " + self.wcp_info[w]["IP"])
                 print("Get Domain: ")
                 domain = w.split(":")[0].split("domain-")[1]
                 print(domain)
-                print("Registraion Link: ")
-                reg_link = self.wcp_info[w]["lcp"]["localcontrolplane"]["status"]["registrationUrl"]
-                print(reg_link)
-                cmd1 = 'curl -k -X GET "https://raw.githubusercontent.com/yogeshbendre/ytmc/master/tmc_registration_template.yaml" -o /root/tmc_registration_template.yaml'
-                self.wcp_fetcher.run_command_on_wcp(w,cmd1)
+                if 'apply' in yaml_action:
+                    cmd0 = 'kubectl delete agentinstall tmc-agent-installer-config -n svc-tmc-'+domain
+                    self.wcp_fetcher.run_command_on_wcp(w, cmd0)
+                    print("Sleeping for 5 sec.")
+                    time.sleep(5)
+
+                cmd1 = 'curl -k -X GET "https://raw.githubusercontent.com/yogeshbendre/ytmc/master/tmc_deregistration_template.yaml" -o /root/tmc_deregistration_template.yaml'
+                self.wcp_fetcher.run_command_on_wcp(w, cmd1)
                 time.sleep(1)
-                reg_link = reg_link.replace("/","\/").replace("?","\?").replace("&","\&")
-                cmd2 = "cat /root/tmc_registration_template.yaml | sed 's/<namespace>/svc-tmc-"+domain+"/g' | sed 's/<registration_link>/"+reg_link+"/g' > /root/tmc_register.yaml"
+
+                cmd2 = "cat /root/tmc_deregistration_template.yaml | sed 's/<namespace>/svc-tmc-"+domain+"/g' > /root/tmc_deregister.yaml"
                 self.wcp_fetcher.run_command_on_wcp(w,cmd2)
                 time.sleep(1)
                 print("Generated YAML for TMC Registration")
-                cmd3 = "cat  /root/tmc_register.yaml"
+
+                cmd3 = "cat  /root/tmc_deregister.yaml"
                 self.wcp_fetcher.run_command_on_wcp(w, cmd3)
                 time.sleep(1)
-                if yaml_action == 'apply':
-                    cmd4 = "kubectl apply -f  /root/tmc_register.yaml"
+                if 'apply' in yaml_action:
+                    cmd4 = "kubectl apply -f  /root/tmc_deregister.yaml"
                     self.wcp_fetcher.run_command_on_wcp(w, cmd4)
                     time.sleep(1)
-
                 print("Completed")
             except Exception as e:
                 print(str(e))
@@ -81,6 +86,7 @@ if __name__ == "__main__":
     api_token = None
     org_id = None
     lcp_prefix = None
+    force = None
     yaml_action = None
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--vcenter", help="Specify vCenter", type=str)
@@ -91,6 +97,7 @@ if __name__ == "__main__":
     parser.add_argument("-a","--apitoken", type=str, help="Specify your api token")
     parser.add_argument("-o","--orgid", type=str, help="Specify org id")
     parser.add_argument("-x", "--lcpprefix", type=str, help="Specify LCP Prefix")
+    parser.add_argument("-f", "--force", type=str, help="Specify true/false whether to force delete. Default: true")
     parser.add_argument("-y", "--yamlaction", type=str, help="Specify either apply or generate. Default: apply")
 
     args = parser.parse_args()
@@ -145,6 +152,17 @@ if __name__ == "__main__":
         print("No LCP Prefix specified, exiting. Try --help for more info.")
         exit(1)
 
+    if args.force:
+        force = args.force
+    else:
+        print("No force param specified. Assuming true.")
+        force = "true"
+
+    force = force.lower()
+    force_delete = True
+    if 'false' in force:
+        force_delete = False
+
     if args.yamlaction:
         yaml_action = args.yamlaction
     else:
@@ -153,5 +171,5 @@ if __name__ == "__main__":
 
 
 tmc_workflow = TMCWorkFlow(vc, username, password, tmc_url, api_token, org_id, lcp_prefix)
-tmc_workflow.create_lcp()
-tmc_workflow.register_cluster()
+tmc_workflow.delete_lcp()
+tmc_workflow.deregister_cluster(force_delete)
