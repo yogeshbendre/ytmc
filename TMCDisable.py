@@ -117,7 +117,7 @@ class TMCWorkFlow:
                 try:
                     print("Check disconnection of "+self.wcp_info[w]["lcp_name"])
                     myhealth = self.is_lcp_healthy(self.wcp_info[w]["lcp_name"])
-                    areAllHealthy = areAllHealthy or not myhealth
+                    areAllHealthy = areAllHealthy or myhealth
                     healthStates[self.wcp_info[w]["lcp_name"]] = not myhealth
                 except Exception as e:
                     healthStates[self.wcp_info[w]["lcp_name"]] = False
