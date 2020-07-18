@@ -92,7 +92,7 @@ class TMCWorkFlow:
         t = 0
         areAllHealthy = True
         healthStates = {}
-        while t<monitor_time_in_min:
+        while t <= monitor_time_in_min:
             areAllHealthy = True
             for w in self.wcp_info:
                 try:
@@ -108,9 +108,9 @@ class TMCWorkFlow:
                     print("LCP: "+lcp+" Healthy: "+str(healthStates[lcp]))
                 break
             else:
-                t = t+1
                 print("Some LCP are still not healthy. Sleeping for 1 min. Remaining Time: "+str(monitor_time_in_min-t)+" min")
                 time.sleep(60)
+                t = t + 1
 
             if(areAllHealthy):
                 return True
