@@ -27,6 +27,20 @@ class TMCWorkFlow:
         print(self.wcp_info)
         print("Initialized successfully")
 
+    def fillInfo(self):
+        for w in self.wcp_info:
+            print("Cluster: "+w)
+            try:
+                lcp_name = lcp_prefix + "-vc-" + self.vc.replace(".", "-") + "-w-" + self.wcp_info[w]["IP"].replace(".", "-") + "lcp"
+                self.wcp_info[w]["lcp_name"] = lcp_name
+                print("LCP: "+lcp_name)
+
+            except Exception as e:
+                print(str(e))
+
+        print("Completed")
+
+
     def delete_lcp(self, force=True):
         for w in self.wcp_info:
             print("Cluster: "+w)
@@ -36,6 +50,7 @@ class TMCWorkFlow:
                 lcp_name = lcp_prefix + "-vc-" + self.vc.replace(".", "-") + "-w-" + self.wcp_info[w]["IP"].replace(".", "-") + "lcp"
                 myinfo = self.tmc_handler.delete_local_control_plane(lcp_name, force)
                 self.wcp_info[w]["lcp"] = myinfo
+                self.wcp_info[w]["lcp_name"] = lcp_name
                 print("Completed")
             except Exception as e:
                 print(str(e))
@@ -116,12 +131,12 @@ class TMCWorkFlow:
                 time.sleep(60)
                 t = t + 1
 
-            if(not areAllHealthy):
-                return True
-            print("Monitoring Time Out and still few LCPs are healthy.")
-            for lcp in healthStates.keys():
-                print("LCP: " + lcp + " Disconnected: " + str(healthStates[lcp]))
-            return False
+        if(not areAllHealthy):
+            return True
+        print("Monitoring Time Out and still few LCPs are healthy.")
+        for lcp in healthStates.keys():
+            print("LCP: " + lcp + " Disconnected: " + str(healthStates[lcp]))
+        return False
 
 
 #Driver code
@@ -229,6 +244,7 @@ if __name__ == "__main__":
 
 
 tmc_workflow = TMCWorkFlow(vc, username, password, tmc_url, api_token, org_id, lcp_prefix)
+tmc_workflow.fillInfo()
 tmc_workflow.deregister_cluster()
 tmc_workflow.monitor_deregistration(monitor_time_in_min)
 tmc_workflow.delete_lcp(force_delete)

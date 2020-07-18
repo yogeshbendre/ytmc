@@ -112,12 +112,12 @@ class TMCWorkFlow:
                 time.sleep(60)
                 t = t + 1
 
-            if(areAllHealthy):
-                return True
-            print("Monitoring Time Out and still few LCPs are not healthy.")
-            for lcp in healthStates.keys():
-                print("LCP: " + lcp + " Healthy: " + str(healthStates[lcp]))
-            return False
+        if(areAllHealthy):
+            return True
+        print("Monitoring Time Out and still few LCPs are not healthy.")
+        for lcp in healthStates.keys():
+            print("LCP: " + lcp + " Healthy: " + str(healthStates[lcp]))
+        return False
 
 
 
