@@ -61,9 +61,9 @@ class TMC:
         self.generate_access_token()
         headers = {"Content-Type": "application/json", "Authorization": "Bearer " + self.access_token}
         print(headers)
-        url = "https://" + self.tmc_url + "/v1alpha1/localcontrolplanes/"+lcp_name+"?fullName.orgId=self.org_id&force=" + str(force).lower()
+        url = "https://" + self.tmc_url + "/v1alpha1/localcontrolplanes/"+lcp_name+"?fullName.orgId="+self.org_id+"&force=" + str(force).lower()
         print("url : " + url)
-        resp = self.mysession.delete(url, headers=headers)
+        resp = self.mysession.delete(url, headers=headers, timeout=60)
         print(resp.status_code)
         print(resp.json())
         return resp.json()
@@ -80,7 +80,22 @@ class TMC:
         resp = self.mysession.get(url, headers=headers)
         print(resp.status_code)
         print(resp.json())
+        return resp
+
+    def list_local_control_planes(self):
+        #curl -X GET \
+        #https://<tmc_url>/v1alpha1/localcontrolplanes/ \
+        #-H 'Authorization: Bearer <auth_token>'
+        self.generate_access_token()
+        headers = {"Content-Type": "application/json", "Authorization": "Bearer " + self.access_token}
+        print(headers)
+        url = "https://" + self.tmc_url + "/v1alpha1/localcontrolplanes"
+        print("url : " + url)
+        resp = self.mysession.get(url, headers=headers)
+        print(resp.status_code)
+        print(resp.json())
         return resp.json()
+
 
 
 #Driver code

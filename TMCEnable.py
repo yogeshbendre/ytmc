@@ -34,6 +34,7 @@ class TMCWorkFlow:
                 lcp_name = lcp_prefix + "-vc-" +self.vc.replace(".","-") + "-w-" + self.wcp_info[w]["IP"].replace(".","-") + "lcp"
                 myinfo = self.tmc_handler.create_local_control_plane(lcp_name)
                 self.wcp_info[w]["lcp"] = myinfo
+                self.wcp_info[w]["lcp_name"] = lcp_name
                 print("Completed")
             except Exception as e:
                 print(str(e))
@@ -69,6 +70,54 @@ class TMCWorkFlow:
             except Exception as e:
                 print(str(e))
 
+    def is_lcp_healthy(self, lcp_name):
+        myresp = tmc.get_local_control_plane(lcp_name)
+        try:
+            lcp_info = myresp.json()
+            if("healthy" in lcp_info["localcontrolplane"]["status"]["health"].lower()):
+                print("LCP: "+lcp_name+" seems to be healthy.")
+                return True
+            else:
+                print("LCP: " + lcp_name + " seems to be unhealthy.")
+                return False
+        except Exception as e:
+            print("Health check for "+lcp_name+" failed with "+str(e))
+            return False
+
+
+
+    def monitor_registration(self, monitor_time_in_min = 5):
+        print("Monitoring registration for "+str(monitor_time_in_min)+" minutes...")
+        t = 0
+        areAllHealthy = True
+        healthStates = {}
+        while t<monitor_time_in_min:
+            areAllHealthy = True
+            for w in self.wcp_info:
+                try:
+                    print("Check health of "+self.wcp_info[w]["lcp_name"])
+                    myhealth = self.is_lcp_healthy(self.wcp_info[w]["lcp_name"])
+                    areAllHealthy = areAllHealthy and myhealth
+                    healthStates[self.wcp_info[w]["lcp_name"]] = myhealth
+                except Exception as e:
+                    healthStates[self.wcp_info[w]["lcp_name"]] = False
+            if(areAllHealthy):
+                print("All the control planes are in healthy states.")
+                for lcp in healthStates.keys():
+                    print("LCP: "+lcp+" Healthy: "+str(healthStates[lcp]))
+                break
+            else:
+                if(t <= monitor_time_in_min):
+                    t = t+1
+                    print("Some LCP are still not healthy. Sleeping for 1 min. Remaining Time: "+str(monitor_time_in_min-t)+" min")
+
+            if(areAllHealthy):
+                return True
+            print("Monitoring Time Out and still few LCPs are not healthy.")
+            for lcp in healthStates.keys():
+                print("LCP: " + lcp + " Healthy: " + str(healthStates[lcp]))
+            return False
+
 
 
 #Driver code
@@ -82,6 +131,8 @@ if __name__ == "__main__":
     org_id = None
     lcp_prefix = None
     yaml_action = None
+    monitor_time_in_min = None
+
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--vcenter", help="Specify vCenter", type=str)
     parser.add_argument("-u", "--username", type=str, help="Specify vCenter ssh username. Default: root")
@@ -92,6 +143,7 @@ if __name__ == "__main__":
     parser.add_argument("-o","--orgid", type=str, help="Specify org id")
     parser.add_argument("-x", "--lcpprefix", type=str, help="Specify LCP Prefix")
     parser.add_argument("-y", "--yamlaction", type=str, help="Specify either apply or generate. Default: apply")
+    parser.add_argument("-m", "--monitortime", type=str, help="Specify time in minutes to monitor registration. Default: 5")
 
     args = parser.parse_args()
 
@@ -151,7 +203,14 @@ if __name__ == "__main__":
         print("No yaml action specified. Assuming apply")
         yaml_action = "apply"
 
+    if args.monitortime:
+        monitor_time_in_min = int(args.monitortime)
+    else:
+        print("No monitor time specified. Assuming 5 min.")
+        monitor_time_in_min = 5
+
 
 tmc_workflow = TMCWorkFlow(vc, username, password, tmc_url, api_token, org_id, lcp_prefix)
 tmc_workflow.create_lcp()
 tmc_workflow.register_cluster()
+tmc.monitor_registration(monitor_time_in_min)
