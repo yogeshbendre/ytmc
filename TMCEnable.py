@@ -8,6 +8,7 @@ import argparse
 from TMCHandler import TMC
 from WCPFetcher import WCPFetcher
 import time
+
 class TMCWorkFlow:
 
     def __init__(self, vc, username, password, tmc_url, api_token, org_id, lcp_prefix):
@@ -107,9 +108,9 @@ class TMCWorkFlow:
                     print("LCP: "+lcp+" Healthy: "+str(healthStates[lcp]))
                 break
             else:
-                if(t <= monitor_time_in_min):
-                    t = t+1
-                    print("Some LCP are still not healthy. Sleeping for 1 min. Remaining Time: "+str(monitor_time_in_min-t)+" min")
+                t = t+1
+                print("Some LCP are still not healthy. Sleeping for 1 min. Remaining Time: "+str(monitor_time_in_min-t)+" min")
+                time.sleep(60)
 
             if(areAllHealthy):
                 return True
