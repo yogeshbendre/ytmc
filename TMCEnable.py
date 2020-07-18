@@ -71,7 +71,7 @@ class TMCWorkFlow:
                 print(str(e))
 
     def is_lcp_healthy(self, lcp_name):
-        myresp = tmc.get_local_control_plane(lcp_name)
+        myresp = self.tmc_handler.get_local_control_plane(lcp_name)
         try:
             lcp_info = myresp.json()
             if("healthy" in lcp_info["localcontrolplane"]["status"]["health"].lower()):
@@ -213,4 +213,4 @@ if __name__ == "__main__":
 tmc_workflow = TMCWorkFlow(vc, username, password, tmc_url, api_token, org_id, lcp_prefix)
 tmc_workflow.create_lcp()
 tmc_workflow.register_cluster()
-tmc.monitor_registration(monitor_time_in_min)
+tmc_workflow.monitor_registration(monitor_time_in_min)
