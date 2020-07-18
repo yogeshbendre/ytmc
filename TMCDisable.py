@@ -75,6 +75,54 @@ class TMCWorkFlow:
                 print(str(e))
 
 
+    def is_lcp_healthy(self, lcp_name):
+        myresp = self.tmc_handler.get_local_control_plane(lcp_name)
+        try:
+            lcp_info = myresp.json()
+            if("healthy" in lcp_info["localcontrolplane"]["status"]["health"].lower()):
+                print("LCP: "+lcp_name+" seems to be healthy.")
+                return True
+            else:
+                print("LCP: " + lcp_name + " seems to be unhealthy.")
+                return False
+        except Exception as e:
+            print("Health check for "+lcp_name+" failed with "+str(e))
+            return False
+
+
+
+    def monitor_deregistration(self, monitor_time_in_min = 5):
+        print("Monitoring deregistration for "+str(monitor_time_in_min)+" minutes...")
+        t = 0
+        areAllHealthy = False
+        healthStates = {}
+        while t <= monitor_time_in_min:
+            areAllHealthy = False
+            for w in self.wcp_info:
+                try:
+                    print("Check disconnection of "+self.wcp_info[w]["lcp_name"])
+                    myhealth = self.is_lcp_healthy(self.wcp_info[w]["lcp_name"])
+                    areAllHealthy = areAllHealthy or not myhealth
+                    healthStates[self.wcp_info[w]["lcp_name"]] = not myhealth
+                except Exception as e:
+                    healthStates[self.wcp_info[w]["lcp_name"]] = False
+            if(not areAllHealthy):
+                print("All the control planes are in disconnected states.")
+                for lcp in healthStates.keys():
+                    print("LCP: "+lcp+" Disconnected: "+str(healthStates[lcp]))
+                break
+            else:
+                print("Some LCP are still healthy. Sleeping for 1 min. Remaining Time: "+str(monitor_time_in_min-t)+" min")
+                time.sleep(60)
+                t = t + 1
+
+            if(not areAllHealthy):
+                return True
+            print("Monitoring Time Out and still few LCPs are healthy.")
+            for lcp in healthStates.keys():
+                print("LCP: " + lcp + " Disconnected: " + str(healthStates[lcp]))
+            return False
+
 
 #Driver code
 if __name__ == "__main__":
@@ -88,6 +136,7 @@ if __name__ == "__main__":
     lcp_prefix = None
     force = None
     yaml_action = None
+    monitor_time_in_min = None
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--vcenter", help="Specify vCenter", type=str)
     parser.add_argument("-u", "--username", type=str, help="Specify vCenter ssh username. Default: root")
@@ -99,6 +148,7 @@ if __name__ == "__main__":
     parser.add_argument("-x", "--lcpprefix", type=str, help="Specify LCP Prefix")
     parser.add_argument("-f", "--force", type=str, help="Specify true/false whether to force delete. Default: true")
     parser.add_argument("-y", "--yamlaction", type=str, help="Specify either apply or generate. Default: apply")
+    parser.add_argument("-m", "--monitortime", type=str, help="Specify time in minutes to monitor deregistration. Default: 5")
 
     args = parser.parse_args()
 
@@ -169,7 +219,16 @@ if __name__ == "__main__":
         print("No yaml action specified. Assuming apply")
         yaml_action = "apply"
 
+    if args.monitortime:
+        monitor_time_in_min = int(args.monitortime)
+    else:
+        print("No monitor time specified. Assuming 5 min.")
+        monitor_time_in_min = 5
+
+
+
 
 tmc_workflow = TMCWorkFlow(vc, username, password, tmc_url, api_token, org_id, lcp_prefix)
-tmc_workflow.delete_lcp()
-tmc_workflow.deregister_cluster(force_delete)
+tmc_workflow.deregister_cluster()
+tmc_workflow.monitor_deregistration(monitor_time_in_min)
+tmc_workflow.delete_lcp(force_delete)
