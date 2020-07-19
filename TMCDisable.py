@@ -9,10 +9,18 @@ from TMCHandler import TMC
 from WCPFetcher import WCPFetcher
 import time
 
+def workflow(vc, username, password, tmc_url, api_token, org_id, lcp_prefix, monitor_time_in_min, yaml_action, force_delete, force_delete):
+    tmc_workflow = TMCWorkFlow(vc, username, password, tmc_url, api_token, org_id, lcp_prefix, yaml_action)
+    tmc_workflow.fillInfo()
+    tmc_workflow.deregister_cluster()
+    tmc_workflow.monitor_deregistration(monitor_time_in_min)
+    tmc_workflow.delete_lcp(force_delete)
+
+
 
 class TMCWorkFlow:
 
-    def __init__(self, vc, username, password, tmc_url, api_token, org_id, lcp_prefix):
+    def __init__(self, vc, username, password, tmc_url, api_token, org_id, lcp_prefix, yaml_action):
         self.vc = vc
         self.username = username
         self.password = password
@@ -20,6 +28,7 @@ class TMCWorkFlow:
         self.api_token = api_token
         self.org_id = org_id
         self.lcp_prefix = lcp_prefix
+        self.yaml_action = yaml_action
         self.tmc_handler = TMC(self.tmc_url, self.api_token, self.org_id)
         self.wcp_fetcher = WCPFetcher(self.vc, self.username, self.password)
         self.wcp_info = self.wcp_fetcher.wcp_info
@@ -63,7 +72,7 @@ class TMCWorkFlow:
                 print("Get Domain: ")
                 domain = w.split(":")[0].split("domain-")[1]
                 print(domain)
-                if 'apply' in yaml_action:
+                if 'apply' in self.yaml_action:
                     cmd0 = 'kubectl delete agentinstall tmc-agent-installer-config -n svc-tmc-'+domain
                     self.wcp_fetcher.run_command_on_wcp(w, cmd0)
                     print("Sleeping for 5 sec.")
@@ -81,7 +90,7 @@ class TMCWorkFlow:
                 cmd3 = "cat  /root/tmc_deregister.yaml"
                 self.wcp_fetcher.run_command_on_wcp(w, cmd3)
                 time.sleep(1)
-                if 'apply' in yaml_action:
+                if 'apply' in self.yaml_action:
                     cmd4 = "kubectl apply -f  /root/tmc_deregister.yaml"
                     self.wcp_fetcher.run_command_on_wcp(w, cmd4)
                     time.sleep(1)
@@ -229,7 +238,7 @@ if __name__ == "__main__":
         force_delete = False
 
     if args.yamlaction:
-        yaml_action = args.yamlaction
+        yaml_action = str(args.yamlaction).lower()
     else:
         print("No yaml action specified. Assuming apply")
         yaml_action = "apply"
@@ -240,11 +249,5 @@ if __name__ == "__main__":
         print("No monitor time specified. Assuming 5 min.")
         monitor_time_in_min = 5
 
-
-
-
-tmc_workflow = TMCWorkFlow(vc, username, password, tmc_url, api_token, org_id, lcp_prefix)
-tmc_workflow.fillInfo()
-tmc_workflow.deregister_cluster()
-tmc_workflow.monitor_deregistration(monitor_time_in_min)
-tmc_workflow.delete_lcp(force_delete)
+    workflow(vc, username, password, tmc_url, api_token, org_id, lcp_prefix, monitor_time_in_min, yaml_action,
+             force_delete, force_delete)
