@@ -32,7 +32,7 @@ class TMCWorkFlow:
         self.wcp_fetcher = WCPFetcher(self.vc, self.username, self.password)
         self.wcp_info = self.wcp_fetcher.wcp_info
         self.skipIPList = skipIPList
-        print("Skip List: "+self.skipIPList)
+        print("Skip List: "+str(self.skipIPList))
         mywcp_info = self.wcp_info
         for w in mywcp_info:
             if mywcp_info[w] in self.skipIPList:
